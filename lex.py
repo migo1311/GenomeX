@@ -1,18 +1,76 @@
-import re
+import string
 import tkinter as tk
 from tkinter import scrolledtext
 
-operators = {'=' : 'Assignment op','+' : 'Addition op','-' : 'Subtraction op','/' : 'Division op','*' : 'Multiplication op','<' : 'Lessthan op','>' : 'Greaterthan op' }
-operators_key = operators.keys()
+def is_identifier(token):
+    if token[0].isupper():
+        if len(token) <= 20 and all(c in string.ascii_letters + string.digits + '_' for c in token[1:]):
+            return True
+    return False
 
-data_type = {'int' : 'integer type', 'float': 'Floating point' , 'char' : 'Character type', 'long' : 'long int' }
+def is_string_literal(token):
+    return token.startswith('"') and token.endswith('"')
+
+def is_integer_literal(token):
+    integer_value = int(token)
+
+    if -999999999 <= integer_value <= 999999999 and len(token.lstrip('-')) <= 9:
+        return 'INTEGER_LITERAL'
+
+
+mathematical_operators = {
+    '+' : 'Addition op',
+    '-' : 'Subtraction op',
+    '/' : 'Division op',
+    '*' : 'Multiplication op',
+    '%' : 'Modulo op',
+    }
+mathematical_operators_key = mathematical_operators.keys()
+
+assignment_operators = {
+    '=' : 'Assignment op',
+    '^' : 'Negate op',
+    }
+assignment_operators_key = assignment_operators.keys()
+
+relational_operators = {
+    '==' : 'Assignment op',
+    '>' : 'Negate op',
+    '<' : 'Negate op',
+    '>=' : 'Negate op',
+    '<=' : 'Negate op',
+    '!=' : 'Negate op',
+    }
+relational_operators_key = relational_operators.keys()
+
+logical_operators = {
+    '&&' : 'Assignment op',
+    '||' : 'Negate op',
+    '!' : 'Negate op',
+    }
+logical_operators_key = logical_operators.keys()
+
+data_type = {
+    'dose' : 'integer type', 
+    'quant': 'Floating point' , 
+    'seq' : 'Character type', 
+    'allele' : 'boolean' 
+    }
 data_type_key = data_type.keys()
 
-punctuation_symbol = { ':' : 'colon', ';' : 'semi-colon', '.' : 'dot' , ',' : 'comma' }
-punctuation_symbol_key = punctuation_symbol.keys()
-
-identifier = { 'a' : 'id', 'b' : 'id', 'c' : 'id' , 'd' : 'id' }
-identifier_key = identifier.keys()
+other_symbols = { 
+    '"' : 'Double Quote', 
+    ';' : 'Semi-colon', 
+    '_' : 'Identifier Separator' , 
+    '(' : 'Open Parenthesis',
+    ')' : 'Closed Parenthesis',
+    '{' : 'Open Curly Brace',
+    '}' : 'Closed Curly Brace',
+    '[' : 'Open Square Brace',
+    ']' : 'Closed Square Brace',
+    '#' : 'Pound'
+    }
+other_symbols_key = other_symbols.keys()
 
 reserved_words = {
     'if': 'IF_STATEMENT',  
@@ -20,30 +78,18 @@ reserved_words = {
     'prod': 'RETURN_STATEMENT',  
     'act': 'DEFINE_STATEMENT',  
     'gene': 'MAIN_STATEMENT',  
-    'dose': 'INTEGER_STATEMENT',  
-    'quant': 'FLOAT_STATEMENT',  
-    'seq': 'STRING_STATEMENT', 
-    'allele': 'BOOLEAN_STATEMENT',   
     'express': 'PRINT_STATEMENT',   
     'stimuli': 'INPUT_STATEMENT',
-}
+    'for': 'FOR_STATEMENT',
+    'while': 'WHILE_STATEMENT',
+    'destroy': 'BREAK_STATEMENT',
+    'contig': 'CONTINUE_STATEMENT',
+    'dom': 'TRUE_STATEMENT',
+    'rec': 'FALSE_STATEMENT',
+    'clust': 'ARRAY_STATEMENT',
+    'perms': 'CONST_STATEMENT',
+    }
 reserved_words_key = reserved_words.keys()
-
-integer_literals = {
-    '0': 'INTEGER_LITERAL',
-    '1': 'INTEGER_LITERAL',
-    '2': 'INTEGER_LITERAL',
-    '3': 'INTEGER_LITERAL',
-    '4': 'INTEGER_LITERAL',
-    '5': 'INTEGER_LITERAL',
-    '6': 'INTEGER_LITERAL',
-    '7': 'INTEGER_LITERAL',
-    '8': 'INTEGER_LITERAL',
-    '9': 'INTEGER_LITERAL',
-}
-integer_literals_key = integer_literals.keys()
-
-dataFlag = False
 
 def parse_program():
     count = 0
@@ -52,26 +98,38 @@ def parse_program():
 
     for line in program:
         count += 1
-        output_text.insert(tk.END, f"Line# {count}\n{line}\n")
+        program = input_text.get(1.0, tk.END).strip().splitlines()
 
         tokens = line.split(' ')
         output_text.insert(tk.END, f"Tokens are: {tokens}\n")
         output_text.insert(tk.END, f"Line# {count} properties:\n")
 
         for token in tokens:
-            if token in operators_key:
-                output_text.insert(tk.END, f"Operator: {operators[token]}\n")
+            if is_string_literal(token):
+                output_text.insert(tk.END, f"String Literal: {token}\n")
+            if is_identifier(token):
+                output_text.insert(tk.END, f"Identifier: {token}\n")
+            if token in mathematical_operators_key:
+                output_text.insert(tk.END, f"Operator: {mathematical_operators[token]}\n")
+            if token in assignment_operators_key:
+                output_text.insert(tk.END, f"Operator: {assignment_operators[token]}\n")
+            if token in relational_operators_key:
+                output_text.insert(tk.END, f"Operator: {relational_operators[token]}\n")
+            if token in logical_operators_key:
+                output_text.insert(tk.END, f"Operator: {logical_operators[token]}\n")
             if token in data_type_key:
                 output_text.insert(tk.END, f"Data Type: {data_type[token]}\n")
-            if token in punctuation_symbol_key:
-                output_text.insert(tk.END, f"Punctuation: {punctuation_symbol[token]}\n")
-            if token in identifier_key:
-                output_text.insert(tk.END, f"Identifier: {identifier[token]}\n")
+            if token in other_symbols_key:
+                output_text.insert(tk.END, f"Punctuation: {other_symbols[token]}\n")
             if token in reserved_words_key:
                 output_text.insert(tk.END, f"Reserve Words: {reserved_words[token]}\n")
-            if token in integer_literals_key:
-                output_text.insert(tk.END, f"Integer Literal: {integer_literals[token]}\n")
+            if token in reserved_words_key:
+                output_text.insert(tk.END, f"Reserve Words: {reserved_words[token]}\n")
         output_text.insert(tk.END, "_ _ _ _ _ _ _ _ _ _ _ _ _ _\n")
+
+    for value in token:
+        result = is_integer_literal(token)
+        output_text.insert(tk.END, f"Integer Literal: {value}: {result}\n")
 
 # Creating the tkinter UI
 root = tk.Tk()
@@ -80,7 +138,6 @@ root.title("Lexical Analyzer")
 # Create a Text widget for code input
 input_text = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=60, height=10)
 input_text.pack(pady=10)
-input_text.insert(tk.END, "Type your code here...")  # Placeholder text
 
 # Create a button to trigger the lexical analyzer
 parse_button = tk.Button(root, text="Run", command=parse_program)
