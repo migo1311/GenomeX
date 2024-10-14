@@ -12,11 +12,20 @@ def is_string_literal(token):
     return token.startswith('"') and token.endswith('"')
 
 def is_integer_literal(token):
-    integer_value = int(token)
+    if "." not in token:
+        integer_value = int(token)
 
-    if -999999999 <= integer_value <= 999999999 and len(token.lstrip('-')) <= 9:
-        return 'INTEGER_LITERAL'
+        if -999999999 <= integer_value <= 999999999 and len(token.lstrip('-')) <= 9:
+            return True
+        else:
+            pass
 
+def is_float_literal(token):
+    float_value = float(token)
+
+    if -999999999 <= float_value <= 999999999 and len(token.lstrip('-')) <= 9:
+        if "." in token:
+            return True
 
 mathematical_operators = {
     '+' : 'Addition op',
@@ -109,6 +118,8 @@ def parse_program():
                 output_text.insert(tk.END, f"String Literal: {token}\n")
             if is_identifier(token):
                 output_text.insert(tk.END, f"Identifier: {token}\n")
+            if is_integer_literal(token):
+                output_text.insert(tk.END, f"Integer Literal: {token}\n")
             if token in mathematical_operators_key:
                 output_text.insert(tk.END, f"Operator: {mathematical_operators[token]}\n")
             if token in assignment_operators_key:
@@ -123,13 +134,15 @@ def parse_program():
                 output_text.insert(tk.END, f"Punctuation: {other_symbols[token]}\n")
             if token in reserved_words_key:
                 output_text.insert(tk.END, f"Reserve Words: {reserved_words[token]}\n")
-            if token in reserved_words_key:
-                output_text.insert(tk.END, f"Reserve Words: {reserved_words[token]}\n")
         output_text.insert(tk.END, "_ _ _ _ _ _ _ _ _ _ _ _ _ _\n")
 
     for value in token:
         result = is_integer_literal(token)
         output_text.insert(tk.END, f"Integer Literal: {value}: {result}\n")
+    
+    for value in token:
+        result = is_float_literal(token)
+        output_text.insert(tk.END, f"Float Literal: {value}: {result}\n")
 
 # Creating the tkinter UI
 root = tk.Tk()
