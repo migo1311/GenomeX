@@ -1,6 +1,7 @@
 import string
 import tkinter as tk
 from tkinter import scrolledtext
+from tkinter import ttk
 
 def is_identifier(token):
     if token[0].isupper():
@@ -26,6 +27,8 @@ def is_float_literal(token):
     if -999999999 <= float_value <= 999999999 and len(token.lstrip('-')) <= 9:
         if "." in token:
             return True
+
+delimiters = {',': 'COMMA', ';': 'SEMICOLON', '(': 'OPEN_PAREN', ')': 'CLOSE_PAREN', ':': 'COLON'}
 
 mathematical_operators = {
     '+' : 'Addition op',
@@ -107,33 +110,62 @@ def parse_program():
 
     for line in program:
         count += 1
-        program = input_text.get(1.0, tk.END).strip().splitlines()
+        output_text.insert(tk.END, f"Line# {count}\n{line}\n")
+        tokens = []  # List to hold tokens
+        token = ""  # Current token being constructed
 
-        tokens = line.split(' ')
-        output_text.insert(tk.END, f"Tokens are: {tokens}\n")
-        output_text.insert(tk.END, f"Line# {count} properties:\n")
+        # Read each character in the line
+        for char in line:
+            if char in delimiters:
+                # If a delimiter is found, add current token to tokens list
+                if token:
+                    tokens.append(token)
+                    output_text.insert(tk.END, f"Token: {token}\n")
+                    tree.insert('', 'end', values=(count, token, "SampleType"))
+
+                tokens.append(char)
+                output_text.insert(tk.END, f"Delimiter: {char}\n")
+                tree.insert('', 'end', values=(count, char, delimiters[char]))
+
+                token = ""  # Reset token
+            elif char == ' ':
+                # If space is found, finalize the token and start a new one
+                if token:
+                    tokens.append(token)
+                    output_text.insert(tk.END, f"Token: {token}\n")
+                    tree.insert('', 'end', values=(count, token, "SampleType"))
+                token = ""  # Reset token for next word
+            else:
+                # Keep adding to the current token
+                token += char
+
+        # Handle the last token at the end of the line
+        if token:
+            tokens.append(token)
+            output_text.insert(tk.END, f"Token: {token}\n")
+            tree.insert('', 'end', values=(count, token, "SampleType"))
 
         for token in tokens:
-            if is_string_literal(token):
-                output_text.insert(tk.END, f"String Literal: {token}\n")
-            if is_identifier(token):
-                output_text.insert(tk.END, f"Identifier: {token}\n")
-            if is_integer_literal(token):
-                output_text.insert(tk.END, f"Integer Literal: {token}\n")
             if token in mathematical_operators_key:
                 output_text.insert(tk.END, f"Operator: {mathematical_operators[token]}\n")
-            if token in assignment_operators_key:
+            elif token in assignment_operators_key:
                 output_text.insert(tk.END, f"Operator: {assignment_operators[token]}\n")
-            if token in relational_operators_key:
+            elif token in relational_operators_key:
                 output_text.insert(tk.END, f"Operator: {relational_operators[token]}\n")
-            if token in logical_operators_key:
+            elif token in logical_operators_key:
                 output_text.insert(tk.END, f"Operator: {logical_operators[token]}\n")
-            if token in data_type_key:
+            elif token in data_type_key:
                 output_text.insert(tk.END, f"Data Type: {data_type[token]}\n")
-            if token in other_symbols_key:
+            elif token in other_symbols_key:
                 output_text.insert(tk.END, f"Punctuation: {other_symbols[token]}\n")
-            if token in reserved_words_key:
+            elif token in reserved_words_key:
                 output_text.insert(tk.END, f"Reserve Words: {reserved_words[token]}\n")
+            elif is_string_literal(token):
+                    output_text.insert(tk.END, f"String Literal: {token}\n")
+            elif is_identifier(token):
+                    output_text.insert(tk.END, f"Identifier: {token}\n")
+            elif is_integer_literal(token):
+                    output_text.insert(tk.END, f"Integer Literal: {token}\n")
         output_text.insert(tk.END, "_ _ _ _ _ _ _ _ _ _ _ _ _ _\n")
 
     for value in token:
@@ -144,21 +176,39 @@ def parse_program():
         result = is_float_literal(token)
         output_text.insert(tk.END, f"Float Literal: {value}: {result}\n")
 
-# Creating the tkinter UI
+# Create the main root window
 root = tk.Tk()
-root.title("Lexical Analyzer")
+root.title("Lexical Analyzer with Table")
 
-# Create a Text widget for code input
-input_text = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=60, height=10)
-input_text.pack(pady=10)
+# Create a frame to hold the table and the text widgets
+frame = tk.Frame(root)
+frame.pack(fill=tk.BOTH, expand=True)
+
+# Create the table (Treeview) on the left side
+tree = ttk.Treeview(frame, columns=('Line', 'Token', 'Type'), show='headings', height=15)
+tree.heading('Line', text='Line#')
+tree.heading('Token', text='Token')
+tree.heading('Type', text='Type')
+
+# Set column widths
+tree.column('Line', width=50, anchor='center')
+tree.column('Token', width=150, anchor='center')
+tree.column('Type', width=150, anchor='center')
+
+# Pack the Treeview (table) on the left side
+tree.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
+
+# Create a Text widget for code input on the right side
+input_text = scrolledtext.ScrolledText(frame, wrap=tk.WORD, width=40, height=10)
+input_text.pack(side=tk.TOP, padx=10, pady=10)
 
 # Create a button to trigger the lexical analyzer
-parse_button = tk.Button(root, text="Run", command=parse_program)
-parse_button.pack(pady=5)
+parse_button = tk.Button(frame, text="Run", command=parse_program)
+parse_button.pack(side=tk.TOP, padx=10, pady=5)
 
-# Create a ScrolledText widget to display the results
-output_text = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=60, height=15)
-output_text.pack(pady=10)
+# Create a ScrolledText widget to display the results on the right side
+output_text = scrolledtext.ScrolledText(frame, wrap=tk.WORD, width=40, height=15)
+output_text.pack(side=tk.TOP, padx=10, pady=10)
 
 # Start the tkinter main loop
 root.mainloop()
