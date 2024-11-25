@@ -10,23 +10,35 @@ def is_identifier(token):
     return False
 
 def is_string_literal(token):
-    return token.startswith('"') and token.endswith('"')
+    return token.startswith('"') and token.endswith('"') and len(token) > 1
+
+
+def is_float_literal(token):
+    if "." in token:
+        try:
+            float_value = float(token)
+            
+            whole_part, decimal_part = token.split('.')
+            
+            if -999999999 <= float_value <= 999999999 and \
+               len(token.lstrip('-')) <= 9 and \
+               len(decimal_part) <= 7:
+                return True
+            else:
+                return False
+        except ValueError:
+            return False
+    return False
 
 def is_integer_literal(token):
-    if "." not in token:
+    try:
         integer_value = int(token)
-
         if -999999999 <= integer_value <= 999999999 and len(token.lstrip('-')) <= 9:
             return True
         else:
-            pass
-
-def is_float_literal(token):
-    float_value = float(token)
-
-    if -999999999 <= float_value <= 999999999 and len(token.lstrip('-')) <= 9:
-        if "." in token:
-            return True
+            return False
+    except ValueError:
+        return False
 
 delimiters = {',': 'COMMA', ';': 'SEMICOLON', '(': 'OPEN_PAREN', ')': 'CLOSE_PAREN', ':': 'COLON'}
 
@@ -47,18 +59,18 @@ assignment_operators_key = assignment_operators.keys()
 
 relational_operators = {
     '==' : 'Assignment op',
-    '>' : 'Negate op',
-    '<' : 'Negate op',
-    '>=' : 'Negate op',
-    '<=' : 'Negate op',
-    '!=' : 'Negate op',
+    '>' : 'Equal Than',
+    '<' : 'Greater Than',
+    '>=' : 'Less Than or Equal',
+    '<=' : 'Greater Than or Equal',
+    '!=' : 'Not Equal',
     }
 relational_operators_key = relational_operators.keys()
 
 logical_operators = {
-    '&&' : 'Assignment op',
-    '||' : 'Negate op',
-    '!' : 'Negate op',
+    '&&' : 'AND',
+    '||' : 'OR',
+    '!' : 'NOT',
     }
 logical_operators_key = logical_operators.keys()
 
@@ -71,7 +83,6 @@ data_type = {
 data_type_key = data_type.keys()
 
 other_symbols = { 
-    '"' : 'Double Quote', 
     ';' : 'Semi-colon', 
     '_' : 'Identifier Separator' , 
     '(' : 'Open Parenthesis',
@@ -80,7 +91,9 @@ other_symbols = {
     '}' : 'Closed Curly Brace',
     '[' : 'Open Square Brace',
     ']' : 'Closed Square Brace',
-    '#' : 'Pound'
+    '#' : 'Pound',
+    '\n' : 'Newline',
+    ' ' : 'Space'
     }
 other_symbols_key = other_symbols.keys()
 
@@ -103,112 +116,170 @@ reserved_words = {
     }
 reserved_words_key = reserved_words.keys()
 
+delim_gen = [" "]
+
+#Dito if else para sa lahat ng possible na tokens
+def process_token(token, count, output_text, lexical_result, 
+                  mathematical_operators, assignment_operators, relational_operators, 
+                  logical_operators, data_type, other_symbols, reserved_words):
+    
+    if token in mathematical_operators:
+        output_text.insert(tk.END, f"Data Type: {mathematical_operators[token]}\n")
+        lexical_result.insert('', 'end', values=(count, token, mathematical_operators[token]))
+        output_text.insert(tk.END, f"Token: {token}\n")
+        return count + 1
+
+    if token in assignment_operators:
+        output_text.insert(tk.END, f"Operator: {assignment_operators[token]}\n")
+        lexical_result.insert('', 'end', values=(count, token, assignment_operators[token]))
+        output_text.insert(tk.END, f"Token: {token}\n")
+        return count + 1
+
+    if token in relational_operators:
+        output_text.insert(tk.END, f"Operator: {relational_operators[token]}\n")
+        lexical_result.insert('', 'end', values=(count, token, relational_operators[token]))
+        output_text.insert(tk.END, f"Token: {token}\n")
+        return count + 1
+
+    if token in logical_operators:
+        output_text.insert(tk.END, f"Operator: {logical_operators[token]}\n")
+        lexical_result.insert('', 'end', values=(count, token, logical_operators[token]))
+        output_text.insert(tk.END, f"Token: {token}\n")
+        return count + 1
+
+    if token in data_type:
+        output_text.insert(tk.END, f"Data Type: {data_type[token]}\n")
+        lexical_result.insert('', 'end', values=(count, token, data_type[token]))
+        output_text.insert(tk.END, f"Token: {token}\n")
+        return count + 1
+
+    if token in other_symbols:
+        display_token = "\\n" if token == "\n" else token
+        output_text.insert(tk.END, f"Data Type: {other_symbols[token]}\n")
+        lexical_result.insert('', 'end', values=(count, display_token, other_symbols[token]))
+        output_text.insert(tk.END, f"Token: {display_token}\n")
+        return count + 1
+
+    if token in reserved_words:
+        output_text.insert(tk.END, f"Data Type: {reserved_words[token]}\n")
+        lexical_result.insert('', 'end', values=(count, token, reserved_words[token]))
+        output_text.insert(tk.END, f"Token: {token}\n")
+        return count + 1
+
+    if is_string_literal(token):
+        output_text.insert(tk.END, f"Identifier: {token}\n")
+        lexical_result.insert('', 'end', values=(count, token, "String Literal"))
+        output_text.insert(tk.END, f"Token: {token}\n")
+        return count + 1
+
+    if is_identifier(token):
+        output_text.insert(tk.END, f"Identifier: {token}\n")
+        lexical_result.insert('', 'end', values=(count, token, "Identifier"))
+        output_text.insert(tk.END, f"Token: {token}\n")
+        return count + 1
+
+    if is_float_literal(token):
+        output_text.insert(tk.END, f"Float: {token}\n")
+        lexical_result.insert('', 'end', values=(count, token, "Float Literal"))
+        output_text.insert(tk.END, f"Token: {token}\n")
+        return count + 1
+
+    if is_integer_literal(token):
+        output_text.insert(tk.END, f"Integer: {token}\n")
+        lexical_result.insert('', 'end', values=(count, token, "Integer Literal"))
+        output_text.insert(tk.END, f"Token: {token}\n")
+        return count + 1
+
+    return count
+
+#Basa ng text to token
 def parse_program():
-    count = 0
     output_text.delete(1.0, tk.END)  # Clear the output area
-    program = input_text.get(1.0, tk.END).strip().splitlines()  # Get the user input from the Text widget
+    program = input_text.get(1.0, tk.END).strip().splitlines(keepends=True) 
+    
+    for item in lexical_result.get_children():
+        lexical_result.delete(item)
+    
+    count = 1  
 
     for line in program:
-        count += 1
         output_text.insert(tk.END, f"Line# {count}\n{line}\n")
-        tokens = []  # List to hold tokens
-        token = ""  # Current token being constructed
+        tokens = []  
+        token = "" 
 
-        # Read each character in the line
         for char in line:
-            if char in delimiters:
-                # If a delimiter is found, add current token to tokens list
-                if token:
-                    tokens.append(token)
-                    output_text.insert(tk.END, f"Token: {token}\n")
-                    tree.insert('', 'end', values=(count, token, "SampleType"))
+            if char in delim_gen or char in other_symbols_key:
+                if token: 
+                    count = process_token(token, count, output_text, lexical_result, 
+                                        mathematical_operators, assignment_operators, relational_operators, 
+                                        logical_operators, data_type, other_symbols, reserved_words)
+                    token = "" 
+                
+                count = process_token(char, count, output_text, lexical_result, 
+                    mathematical_operators, assignment_operators, relational_operators, 
+                    logical_operators, data_type, other_symbols, reserved_words)
 
-                tokens.append(char)
-                output_text.insert(tk.END, f"Delimiter: {char}\n")
-                tree.insert('', 'end', values=(count, char, delimiters[char]))
-
-                token = ""  # Reset token
-            elif char == ' ':
-                # If space is found, finalize the token and start a new one
-                if token:
-                    tokens.append(token)
-                    output_text.insert(tk.END, f"Token: {token}\n")
-                    tree.insert('', 'end', values=(count, token, "SampleType"))
-                token = ""  # Reset token for next word
             else:
-                # Keep adding to the current token
-                token += char
-
-        # Handle the last token at the end of the line
-        if token:
-            tokens.append(token)
-            output_text.insert(tk.END, f"Token: {token}\n")
-            tree.insert('', 'end', values=(count, token, "SampleType"))
+                token += char  
+        
+        if token:  
+            count = process_token(token, count, output_text, lexical_result, 
+                                mathematical_operators, assignment_operators, relational_operators, 
+                                logical_operators, data_type, other_symbols, reserved_words)
 
         for token in tokens:
             if token in mathematical_operators_key:
                 output_text.insert(tk.END, f"Operator: {mathematical_operators[token]}\n")
-            elif token in assignment_operators_key:
+            if token in assignment_operators_key:
                 output_text.insert(tk.END, f"Operator: {assignment_operators[token]}\n")
-            elif token in relational_operators_key:
+            if token in relational_operators_key:
                 output_text.insert(tk.END, f"Operator: {relational_operators[token]}\n")
-            elif token in logical_operators_key:
+            if token in logical_operators_key:
                 output_text.insert(tk.END, f"Operator: {logical_operators[token]}\n")
-            elif token in data_type_key:
+            if token in data_type_key:
                 output_text.insert(tk.END, f"Data Type: {data_type[token]}\n")
-            elif token in other_symbols_key:
+            if token in other_symbols_key:
                 output_text.insert(tk.END, f"Punctuation: {other_symbols[token]}\n")
-            elif token in reserved_words_key:
+            if token in reserved_words_key:
                 output_text.insert(tk.END, f"Reserve Words: {reserved_words[token]}\n")
-            elif is_string_literal(token):
-                    output_text.insert(tk.END, f"String Literal: {token}\n")
-            elif is_identifier(token):
-                    output_text.insert(tk.END, f"Identifier: {token}\n")
-            elif is_integer_literal(token):
-                    output_text.insert(tk.END, f"Integer Literal: {token}\n")
-        output_text.insert(tk.END, "_ _ _ _ _ _ _ _ _ _ _ _ _ _\n")
+                output_text.insert(tk.END, "_ _ _ _ _ _ _ _ _ _ _ _ _ _\n")
+            if is_string_literal(token):
+                output_text.insert(tk.END, f"String Literal: {token}\n")
+                output_text.insert(tk.END, "_ _ _ _ _ _ _ _ _ _ _ _ _ _\n")
+            if is_identifier(token):
+                output_text.insert(tk.END, f"Identifier: {token}\n")
+                output_text.insert(tk.END, "_ _ _ _ _ _ _ _ _ _ _ _ _ _\n")
+            if is_float_literal(token):
+                output_text.insert(tk.END, f"Float: {token}\n")
+                output_text.insert(tk.END, "_ _ _ _ _ _ _ _ _ _ _ _ _ _\n")
+            if is_integer_literal(token):
+                output_text.insert(tk.END, f"Integer: {token}\n")
+                output_text.insert(tk.END, "_ _ _ _ _ _ _ _ _ _ _ _ _ _\n")
 
-    for value in token:
-        result = is_integer_literal(token)
-        output_text.insert(tk.END, f"Integer Literal: {value}: {result}\n")
-    
-    for value in token:
-        result = is_float_literal(token)
-        output_text.insert(tk.END, f"Float Literal: {value}: {result}\n")
-
-# Create the main root window
 root = tk.Tk()
-root.title("Lexical Analyzer with Table")
+root.title("GenomeX")
 
-# Create a frame to hold the table and the text widgets
 frame = tk.Frame(root)
 frame.pack(fill=tk.BOTH, expand=True)
 
-# Create the table (Treeview) on the left side
-tree = ttk.Treeview(frame, columns=('Line', 'Token', 'Type'), show='headings', height=15)
-tree.heading('Line', text='Line#')
-tree.heading('Token', text='Token')
-tree.heading('Type', text='Type')
+lexical_result = ttk.Treeview(frame, columns=('ID', 'Lexeme', 'Token'), show='headings', height=15)
+lexical_result.heading('ID', text='ID')
+lexical_result.heading('Lexeme', text='Lexeme')
+lexical_result.heading('Token', text='Token')
 
-# Set column widths
-tree.column('Line', width=50, anchor='center')
-tree.column('Token', width=150, anchor='center')
-tree.column('Type', width=150, anchor='center')
+lexical_result.column('ID', width=50, anchor='center')
+lexical_result.column('Lexeme', width=150, anchor='center')
+lexical_result.column('Token', width=150, anchor='center')
 
-# Pack the Treeview (table) on the left side
-tree.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
+lexical_result.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
 
-# Create a Text widget for code input on the right side
 input_text = scrolledtext.ScrolledText(frame, wrap=tk.WORD, width=40, height=10)
 input_text.pack(side=tk.TOP, padx=10, pady=10)
 
-# Create a button to trigger the lexical analyzer
 parse_button = tk.Button(frame, text="Run", command=parse_program)
 parse_button.pack(side=tk.TOP, padx=10, pady=5)
 
-# Create a ScrolledText widget to display the results on the right side
 output_text = scrolledtext.ScrolledText(frame, wrap=tk.WORD, width=40, height=15)
 output_text.pack(side=tk.TOP, padx=10, pady=10)
 
-# Start the tkinter main loop
 root.mainloop()
