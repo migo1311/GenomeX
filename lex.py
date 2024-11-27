@@ -10,11 +10,9 @@ def is_identifier(token):
         if len(token) <= 20 and all(c in string.ascii_letters + string.digits + '_' for c in token[1:]):
             return True
     
-    #Error catching if starts with lowercase
     if token[0].islower():  
         error_messages.append(f"starts with lowercase letter")
     
-    #Error catching if starts with number
     if token[0].isdigit():  
         error_messages.append(f"starts with a number")
     
