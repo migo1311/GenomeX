@@ -168,7 +168,7 @@ def process_token(token, count, output_text, lexical_result,
         lexical_result.insert('', 'end', values=(count, token, "Integer Literal"))
         return count + 1
     
-    if is_identifier(token):  # Identifier validation
+    if is_identifier(token):  
         lexical_result.insert('', 'end', values=(count, token, "Identifier"))
         return count + 1
     
