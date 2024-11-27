@@ -4,14 +4,62 @@ from tkinter import scrolledtext
 from tkinter import ttk
 
 def is_identifier(token):
+    error_messages = []  
+
     if token[0].isupper():
         if len(token) <= 20 and all(c in string.ascii_letters + string.digits + '_' for c in token[1:]):
             return True
+    
+    #Error catching if starts with lowercase
+    if token[0].islower():  
+        error_messages.append(f"starts with lowercase letter")
+    
+    #Error catching if starts with number
+    if token[0].isdigit():  
+        error_messages.append(f"starts with a number")
+    
+    if token[0] == "_":  
+        error_messages.append(f"starts with an underscore")
+
+    if '-' in token:
+        error_messages.append(f"contains a hyphen")
+
+    if len(token) > 20:
+        error_messages.append(f"exceeds the maximum length of 20 characters")
+
+    if error_messages:
+        output_text.insert(tk.END, f"Error: Identifier '{token}' " + " and ".join(error_messages) + ".\n")
+        return False
+    
+    return False
+
+def is_integer_literal(token):
+    if ',' in token:
+        output_text.insert(tk.END, f"Error: Integer '{token}' contains an invalid comma (',').\n")
+        return False
+    
+    if token.count('^') > 1:
+        output_text.insert(tk.END, f"Error: Integer '{token}' contains multiple carets ('^').\n")
+        return False
+    
+    if ' ' in token:
+        output_text.insert(tk.END, f"Error: Integer '{token}' contains an invalid space.\n")
+        return False
+    
+    if token.startswith('-') and token[1:].isdigit():
+        output_text.insert(tk.END, f"Error: Integer '{token}' incorrect negation.\n")
+        return False
+    
+    if token.startswith('^') and token[1:].isdigit():
+        return "Negative Integer"
+    
+    if token.isdigit():
+        return "Positive Integer"
+    
     return False
 
 def is_string_literal(token):
     return token.startswith('"') and token.endswith('"') and len(token) > 1
-
 
 def is_float_literal(token):
     if "." in token:
@@ -29,18 +77,6 @@ def is_float_literal(token):
         except ValueError:
             return False
     return False
-
-def is_integer_literal(token):
-    try:
-        integer_value = int(token)
-        if -999999999 <= integer_value <= 999999999 and len(token.lstrip('-')) <= 9:
-            return True
-        else:
-            return False
-    except ValueError:
-        return False
-
-delimiters = {',': 'COMMA', ';': 'SEMICOLON', '(': 'OPEN_PAREN', ')': 'CLOSE_PAREN', ':': 'COLON'}
 
 mathematical_operators = {
     '+' : 'Addition op',
@@ -75,17 +111,16 @@ logical_operators = {
 logical_operators_key = logical_operators.keys()
 
 data_type = {
-    'dose' : 'integer type', 
-    'quant': 'Floating point' , 
-    'seq' : 'Character type', 
-    'allele' : 'boolean' 
+    'dose' : 'dose', 
+    'quant': 'quant' , 
+    'seq' : 'seq', 
+    'allele' : 'allele' 
     }
 data_type_key = data_type.keys()
 
 other_symbols = { 
-    '"' : 'Double Quote', 
     ';' : 'Semi-colon', 
-    '_' : 'Identifier Separator' , 
+    #'_' : 'Identifier Separator' , 
     '(' : 'Open Parenthesis',
     ')' : 'Closed Parenthesis',
     '{' : 'Open Curly Brace',
@@ -118,76 +153,62 @@ reserved_words = {
 reserved_words_key = reserved_words.keys()
 
 delim_gen = [" "]
-
+    
 #Dito if else para sa lahat ng possible na tokens
 def process_token(token, count, output_text, lexical_result, 
                   mathematical_operators, assignment_operators, relational_operators, 
                   logical_operators, data_type, other_symbols, reserved_words):
     
+    token = token.lstrip('0') or '0' 
+    integer_result = is_integer_literal(token) 
+
+    if integer_result == "Negative Integer":
+        lexical_result.insert('', 'end', values=(count, token, "Negative Integer Literal"))
+        return count + 1
+    
+    if integer_result == "Positive Integer":
+        lexical_result.insert('', 'end', values=(count, token, "Integer Literal"))
+        return count + 1
+    
+    if is_identifier(token):  # Identifier validation
+        lexical_result.insert('', 'end', values=(count, token, "Identifier"))
+        return count + 1
+    
     if token in mathematical_operators:
-        output_text.insert(tk.END, f"Data Type: {mathematical_operators[token]}\n")
         lexical_result.insert('', 'end', values=(count, token, mathematical_operators[token]))
-        output_text.insert(tk.END, f"Token: {token}\n")
         return count + 1
 
     if token in assignment_operators:
-        output_text.insert(tk.END, f"Operator: {assignment_operators[token]}\n")
         lexical_result.insert('', 'end', values=(count, token, assignment_operators[token]))
-        output_text.insert(tk.END, f"Token: {token}\n")
         return count + 1
 
     if token in relational_operators:
-        output_text.insert(tk.END, f"Operator: {relational_operators[token]}\n")
         lexical_result.insert('', 'end', values=(count, token, relational_operators[token]))
-        output_text.insert(tk.END, f"Token: {token}\n")
         return count + 1
 
     if token in logical_operators:
-        output_text.insert(tk.END, f"Operator: {logical_operators[token]}\n")
         lexical_result.insert('', 'end', values=(count, token, logical_operators[token]))
-        output_text.insert(tk.END, f"Token: {token}\n")
         return count + 1
 
     if token in data_type:
-        output_text.insert(tk.END, f"Data Type: {data_type[token]}\n")
         lexical_result.insert('', 'end', values=(count, token, data_type[token]))
-        output_text.insert(tk.END, f"Token: {token}\n")
         return count + 1
 
     if token in other_symbols:
-        output_text.insert(tk.END, f"Data Type: {other_symbols[token]}\n")
-        lexical_result.insert('', 'end', values=(count, token, other_symbols[token]))
-        output_text.insert(tk.END, f"Token: {token}\n")
+        display_token = "\\n" if token == "\n" else token
+        lexical_result.insert('', 'end', values=(count, display_token, other_symbols[token]))
         return count + 1
 
     if token in reserved_words:
-        output_text.insert(tk.END, f"Data Type: {reserved_words[token]}\n")
         lexical_result.insert('', 'end', values=(count, token, reserved_words[token]))
-        output_text.insert(tk.END, f"Token: {token}\n")
         return count + 1
 
     if is_string_literal(token):
-        output_text.insert(tk.END, f"Identifier: {token}\n")
         lexical_result.insert('', 'end', values=(count, token, "String Literal"))
-        output_text.insert(tk.END, f"Token: {token}\n")
-        return count + 1
-
-    if is_identifier(token):
-        output_text.insert(tk.END, f"Identifier: {token}\n")
-        lexical_result.insert('', 'end', values=(count, token, "Identifier"))
-        output_text.insert(tk.END, f"Token: {token}\n")
         return count + 1
 
     if is_float_literal(token):
-        output_text.insert(tk.END, f"Float: {token}\n")
         lexical_result.insert('', 'end', values=(count, token, "Float Literal"))
-        output_text.insert(tk.END, f"Token: {token}\n")
-        return count + 1
-
-    if is_integer_literal(token):
-        output_text.insert(tk.END, f"Integer: {token}\n")
-        lexical_result.insert('', 'end', values=(count, token, "Integer Literal"))
-        output_text.insert(tk.END, f"Token: {token}\n")
         return count + 1
 
     return count
@@ -195,7 +216,7 @@ def process_token(token, count, output_text, lexical_result,
 #Basa ng text to token
 def parse_program():
     output_text.delete(1.0, tk.END)  # Clear the output area
-    program = input_text.get(1.0, tk.END).strip().splitlines() 
+    program = input_text.get(1.0, tk.END).strip().splitlines(keepends=True) 
     
     for item in lexical_result.get_children():
         lexical_result.delete(item)
@@ -203,7 +224,6 @@ def parse_program():
     count = 1  
 
     for line in program:
-        output_text.insert(tk.END, f"Line# {count}\n{line}\n")
         tokens = []  
         token = "" 
 
@@ -228,33 +248,10 @@ def parse_program():
                                 logical_operators, data_type, other_symbols, reserved_words)
 
         for token in tokens:
-            if token in mathematical_operators_key:
-                output_text.insert(tk.END, f"Operator: {mathematical_operators[token]}\n")
-            if token in assignment_operators_key:
-                output_text.insert(tk.END, f"Operator: {assignment_operators[token]}\n")
-            if token in relational_operators_key:
-                output_text.insert(tk.END, f"Operator: {relational_operators[token]}\n")
-            if token in logical_operators_key:
-                output_text.insert(tk.END, f"Operator: {logical_operators[token]}\n")
-            if token in data_type_key:
-                output_text.insert(tk.END, f"Data Type: {data_type[token]}\n")
-            if token in other_symbols_key:
-                output_text.insert(tk.END, f"Punctuation: {other_symbols[token]}\n")
-            if token in reserved_words_key:
-                output_text.insert(tk.END, f"Reserve Words: {reserved_words[token]}\n")
-                output_text.insert(tk.END, "_ _ _ _ _ _ _ _ _ _ _ _ _ _\n")
-            if is_string_literal(token):
-                output_text.insert(tk.END, f"String Literal: {token}\n")
-                output_text.insert(tk.END, "_ _ _ _ _ _ _ _ _ _ _ _ _ _\n")
-            if is_identifier(token):
+            if is_identifier(token) == True:
                 output_text.insert(tk.END, f"Identifier: {token}\n")
                 output_text.insert(tk.END, "_ _ _ _ _ _ _ _ _ _ _ _ _ _\n")
-            if is_float_literal(token):
-                output_text.insert(tk.END, f"Float: {token}\n")
-                output_text.insert(tk.END, "_ _ _ _ _ _ _ _ _ _ _ _ _ _\n")
-            if is_integer_literal(token):
-                output_text.insert(tk.END, f"Integer: {token}\n")
-                output_text.insert(tk.END, "_ _ _ _ _ _ _ _ _ _ _ _ _ _\n")
+
 
 root = tk.Tk()
 root.title("GenomeX")
