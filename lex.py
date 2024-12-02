@@ -118,7 +118,7 @@ data_type_key = data_type.keys()
 
 other_symbols = { 
     ';' : 'Semi-colon', 
-    #'_' : 'Identifier Separator' , 
+    '_' : 'Identifier Separator' , 
     '(' : 'Open Parenthesis',
     ')' : 'Closed Parenthesis',
     '{' : 'Open Curly Brace',
